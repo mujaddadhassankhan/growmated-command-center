@@ -2,30 +2,151 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Fonts ──────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+
+/* ─── Design tokens ──────────────────────────────────────── */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
+  --bg:        #0D1117;
+  --surface:   #141922;
+  --surface2:  #1C2538;
+  --indigo:    #5254CC;
+  --indigo-dim:#4345B0;
+  --border:    rgba(255, 255, 255, 0.07);
+  --border-md: rgba(255, 255, 255, 0.12);
+  --text:      #E2E8F0;
+  --muted:     #8B95A6;
+  --faint:     #4B5563;
 }
 
-html, body {
-  height: 100%;
-}
+html, body { height: 100%; }
 
 body {
-  @apply bg-gray-50 text-gray-900;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+/* ─── Core UI components ─────────────────────────────────── */
 .card {
-  @apply rounded-2xl bg-white shadow-sm border border-gray-200;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
 }
 
 .hdr {
-  @apply bg-navy text-white;
+  background: linear-gradient(135deg, var(--indigo) 0%, var(--indigo-dim) 100%);
+  color: white;
 }
 
 .badge {
   @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold;
 }
 
-.badge-green { @apply bg-green-100 text-green-800; }
-.badge-yellow { @apply bg-amber-100 text-amber-800; }
-.badge-red { @apply bg-red-100 text-red-800; }
+/* Dark-mode badge variants */
+.badge-green  { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+.badge-yellow { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
+.badge-red    { background: rgba(248, 113, 113, 0.12); color: #f87171; }
+
+/* Status badge classes used in clients / dashboard */
+.bg-green-100  { background: rgba(74, 222, 128, 0.12) !important; }
+.bg-amber-100  { background: rgba(251, 191, 36, 0.12) !important; }
+.bg-red-100    { background: rgba(248, 113, 113, 0.12) !important; }
+.bg-blue-100   { background: rgba(96, 165, 250, 0.12) !important; }
+.bg-purple-100 { background: rgba(167, 139, 250, 0.12) !important; }
+.bg-sky-100    { background: rgba(56, 189, 248, 0.12) !important; }
+.bg-gray-100   { background: rgba(255, 255, 255, 0.06) !important; }
+
+.text-green-800  { color: #4ade80 !important; }
+.text-amber-800  { color: #fbbf24 !important; }
+.text-red-800    { color: #f87171 !important; }
+.text-blue-800   { color: #60a5fa !important; }
+.text-purple-800 { color: #c4b5fd !important; }
+.text-sky-800    { color: #38bdf8 !important; }
+.text-gray-500   { color: var(--muted)  !important; }
+.text-gray-600   { color: #94A3B8      !important; }
+.text-gray-700   { color: #CBD5E1      !important; }
+.text-gray-900   { color: var(--text)  !important; }
+
+/* ─── Form inputs (global dark override) ─────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="date"],
+input[type="password"],
+input:not([type]),
+textarea,
+select {
+  background-color: var(--surface2) !important;
+  border-color: var(--border-md) !important;
+  color: var(--text) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--faint) !important;
+}
+
+select option {
+  background-color: var(--surface2);
+  color: var(--text);
+}
+
+/* Focus ring — indigo glow */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(82, 84, 204, 0.45) !important;
+  border-color: var(--indigo) !important;
+}
+
+/* ─── Tables ─────────────────────────────────────────────── */
+table { color: var(--text); }
+th    { color: var(--muted) !important; }
+tr    { border-color: var(--border) !important; }
+
+/* Overdue row tints */
+.bg-amber-50 { background-color: rgba(251, 191, 36, 0.06) !important; }
+.bg-red-50   { background-color: rgba(248, 113, 113, 0.06) !important; }
+
+/* ─── Background overrides ───────────────────────────────── */
+.bg-white    { background-color: var(--surface)  !important; }
+.bg-gray-50  { background-color: var(--surface2) !important; }
+
+/* Border overrides */
+.border-gray-200 { border-color: var(--border-md) !important; }
+.border-gray-100 { border-color: var(--border)    !important; }
+
+/* Error card */
+.border-red-200 { border-color: rgba(248, 113, 113, 0.3) !important; }
+
+/* ─── Modal overlay ──────────────────────────────────────── */
+.bg-black\/50 { background-color: rgba(0, 0, 0, 0.72) !important; }
+
+/* Cancel button in modal */
+.hover\:bg-gray-50:hover { background-color: var(--surface2) !important; }
+
+/* ─── Sensitive / privacy blur ───────────────────────────── */
+.sensitive-blur {
+  filter: blur(7px);
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.2s ease;
+  border-radius: 4px;
+}
+.sensitive-blur:hover {
+  filter: blur(4px);
+}
+.sensitive-clear {
+  filter: none;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}

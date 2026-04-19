@@ -85,7 +85,7 @@ export default function GoalsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Goals & Focus</h1>
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Goals &amp; Focus</h1>
           <p className="text-sm text-gray-600">Your strategic layer &mdash; where you&apos;re headed</p>
         </div>
         <button onClick={save} disabled={saving}

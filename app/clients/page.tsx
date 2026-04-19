@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Section from '@/components/Section'
+import Sensitive from '@/components/Sensitive'
 import { requireSupabase } from '@/lib/supabase'
 import { statusBadgeClass } from '@/lib/utils'
 
@@ -108,7 +109,7 @@ export default function ClientsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Clients</h1>
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Clients</h1>
           <p className="text-sm text-gray-600">{clients.length} total</p>
         </div>
         <button onClick={openAdd} className="px-4 py-2 rounded-xl bg-navy text-white text-sm font-medium hover:bg-navy/90 transition">
@@ -161,10 +162,14 @@ export default function ClientsPage() {
                     <span className={statusBadgeClass(c.status ?? undefined)}>{c.status ?? '—'}</span>
                   </td>
                   <td className="py-2.5 pr-3 text-right">
-                    {c.contract_value_usd != null ? `$${Number(c.contract_value_usd).toLocaleString()}` : '—'}
+                    {c.contract_value_usd != null
+                      ? <Sensitive>${Number(c.contract_value_usd).toLocaleString()}</Sensitive>
+                      : '—'}
                   </td>
                   <td className="py-2.5 pr-3 text-right">
-                    {c.amount_received != null ? `$${Number(c.amount_received).toLocaleString()}` : '—'}
+                    {c.amount_received != null
+                      ? <Sensitive className="text-green-400">${Number(c.amount_received).toLocaleString()}</Sensitive>
+                      : '—'}
                   </td>
                   <td className="py-2.5 pr-3 max-w-[200px] truncate text-gray-600" title={c.next_action ?? ''}>
                     {c.next_action ?? ''}

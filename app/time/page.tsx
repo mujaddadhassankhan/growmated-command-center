@@ -92,7 +92,7 @@ export default function TimePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Time Log</h1>
+        <h1 className="text-2xl font-semibold tracking-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Time Log</h1>
         <p className="text-sm text-gray-600">Track hours across your 9-to-5 and Growmated</p>
       </div>
 
@@ -106,7 +106,7 @@ export default function TimePage() {
       <div className="grid grid-cols-3 gap-4">
         <div className="card p-4">
           <div className="text-xs text-gray-500 mb-1">Growmated hours (this week)</div>
-          <div className="text-2xl font-semibold text-navy">{weekGrowmated.toFixed(1)}h</div>
+          <div className="text-2xl font-semibold" style={{ color: '#5254CC' }}>{weekGrowmated.toFixed(1)}h</div>
         </div>
         <div className="card p-4">
           <div className="text-xs text-gray-500 mb-1">9-to-5 hours (this week)</div>
@@ -184,7 +184,7 @@ export default function TimePage() {
                 <tr key={l.id} className="border-t border-gray-100">
                   <td className="py-2 pr-3">{l.date}</td>
                   <td className="py-2 pr-3">{l.hours_9to5 != null ? `${l.hours_9to5}h` : '—'}</td>
-                  <td className="py-2 pr-3 font-medium text-navy">{l.hours_growmated != null ? `${l.hours_growmated}h` : '—'}</td>
+                  <td className="py-2 pr-3 font-medium" style={{ color: '#5254CC' }}>{l.hours_growmated != null ? `${l.hours_growmated}h` : '—'}</td>
                   <td className="py-2 pr-3">{l.project_task ?? ''}</td>
                   <td className="py-2 pr-3 text-gray-500 text-xs">{l.notes ?? ''}</td>
                   <td className="py-2">
