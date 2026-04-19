@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+}
+
+.card {
+  @apply rounded-2xl bg-white shadow-sm border border-gray-200;
+}
+
+.hdr {
+  @apply bg-navy text-white;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold;
+}
+
+.badge-green { @apply bg-green-100 text-green-800; }
+.badge-yellow { @apply bg-amber-100 text-amber-800; }
+.badge-red { @apply bg-red-100 text-red-800; }
