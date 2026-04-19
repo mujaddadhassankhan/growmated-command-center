@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, useEffect, useState } from 'react'
+import React, { type ReactNode, useEffect, useState } from 'react'
 
 /**
  * Wraps a monetary/sensitive value.
@@ -11,9 +11,11 @@ import { type ReactNode, useEffect, useState } from 'react'
 export default function Sensitive({
   children,
   className = '',
+  style,
 }: {
   children: ReactNode
   className?: string
+  style?: React.CSSProperties
 }) {
   const [globalReveal, setGlobalReveal] = useState(false)
   const [localReveal, setLocalReveal]   = useState(false)
@@ -37,6 +39,7 @@ export default function Sensitive({
   return (
     <span
       className={`${visible ? 'sensitive-clear' : 'sensitive-blur'} ${className}`}
+      style={style}
       onClick={e => {
         e.stopPropagation()
         setLocalReveal(r => !r)
