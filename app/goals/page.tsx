@@ -86,7 +86,7 @@ export default function GoalsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Goals & Focus</h1>
-          <p className="text-sm text-gray-600">Your strategic layer — where you're headed</p>
+          <p className="text-sm text-gray-600">Your strategic layer &mdash; where you&apos;re headed</p>
         </div>
         <button onClick={save} disabled={saving}
           className="px-4 py-2 rounded-xl bg-navy text-white text-sm font-medium hover:bg-navy/90 disabled:opacity-50 transition">
@@ -164,7 +164,7 @@ export default function GoalsPage() {
 
       {/* Parking Lot */}
       <Section title="PARKING LOT">
-        <p className="text-xs text-gray-500 mb-3">Ideas you don't want to lose but aren't acting on yet.</p>
+        <p className="text-xs text-gray-500 mb-3">Ideas you don&apos;t want to lose but aren&apos;t acting on yet.</p>
         <div className="space-y-2 mb-4">
           {(goals?.parking_lot ?? []).length === 0 && (
             <p className="text-sm text-gray-400">No ideas yet. Add one below.</p>
