@@ -6,12 +6,13 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 const links = [
-  { href: '/',          label: 'Dashboard'    },
-  { href: '/clients',   label: 'Clients'      },
-  { href: '/pipeline',  label: 'Pipeline'     },
-  { href: '/finances',  label: 'Finances'     },
-  { href: '/time',      label: 'Time Log'     },
-  { href: '/goals',     label: 'Goals'        },
+  { href: '/',                label: 'Dashboard'      },
+  { href: '/conversations',   label: '💬 Convos'      },
+  { href: '/clients',         label: 'Clients'        },
+  { href: '/pipeline',        label: 'Pipeline'       },
+  { href: '/finances',        label: 'Finances'       },
+  { href: '/time',            label: 'Time Log'       },
+  { href: '/goals',           label: 'Goals'          },
 ]
 
 export default function Nav() {
