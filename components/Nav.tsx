@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 
 const links = [
   { href: '/',                label: 'Dashboard'      },
+  { href: '/activity',        label: '⚡ Activity'    },
   { href: '/conversations',   label: '💬 Convos'      },
   { href: '/templates',        label: '📋 Templates'       },
   { href: '/content-calendar', label: '📅 Content Cal'    },
