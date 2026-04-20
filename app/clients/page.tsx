@@ -39,8 +39,33 @@ const BLANK: Omit<Client, 'id'> = {
 type FormData = Omit<Client, 'id'> & { id?: string }
 
 function todayStr() { return new Date().toISOString().slice(0, 10) }
-function isOverdue(c: Client) {
-  return !!c.next_action_due_date && c.next_action_due_date < todayStr()
+
+function urgency(dateStr: string | null): 'overdue' | 'today' | 'soon' | 'none' {
+  if (!dateStr) return 'none'
+  const today = todayStr()
+  if (dateStr < today) return 'overdue'
+  if (dateStr === today) return 'today'
+  const days = Math.round((new Date(dateStr).getTime() - new Date(today).getTime()) / 86400000)
+  if (days <= 3) return 'soon'
+  return 'none'
+}
+
+function rowUrgencyClass(level: ReturnType<typeof urgency>) {
+  switch (level) {
+    case 'overdue': return 'border-t border-white/5 bg-red-500/10'
+    case 'today':   return 'border-t border-white/5 bg-orange-500/15'
+    case 'soon':    return 'border-t border-white/5 bg-amber-500/8'
+    default:        return 'border-t border-white/5'
+  }
+}
+
+function DueBadge({ dateStr }: { dateStr: string | null }) {
+  if (!dateStr) return <span className="text-gray-500">—</span>
+  const level = urgency(dateStr)
+  if (level === 'overdue') return <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-red-500/20 text-red-400">⚠ {dateStr}</span>
+  if (level === 'today')   return <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-orange-500/20 text-orange-400">⚡ Today</span>
+  if (level === 'soon')    return <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-400">⏰ {dateStr}</span>
+  return <span className="text-gray-500 text-xs">{dateStr}</span>
 }
 
 export default function ClientsPage() {
@@ -154,7 +179,7 @@ export default function ClientsPage() {
                 <tr><td colSpan={9} className="py-6 text-center text-gray-400 text-sm">No clients yet. Hit + Add Client to get started.</td></tr>
               )}
               {filtered.map(c => (
-                <tr key={c.id} className={`border-t border-gray-100 ${isOverdue(c) ? 'bg-red-50' : ''}`}>
+                <tr key={c.id} className={rowUrgencyClass(urgency(c.next_action_due_date))}>
                   <td className="py-2.5 pr-3 font-medium">{c.client_name}</td>
                   <td className="py-2.5 pr-3 text-gray-600">{c.project_name ?? ''}</td>
                   <td className="py-2.5 pr-3">{c.phase ?? ''}</td>
@@ -174,7 +199,7 @@ export default function ClientsPage() {
                   <td className="py-2.5 pr-3 max-w-[200px] truncate text-gray-600" title={c.next_action ?? ''}>
                     {c.next_action ?? ''}
                   </td>
-                  <td className="py-2.5 pr-3 whitespace-nowrap">{c.next_action_due_date ?? ''}</td>
+                  <td className="py-2.5 pr-3 whitespace-nowrap"><DueBadge dateStr={c.next_action_due_date} /></td>
                   <td className="py-2.5">
                     <div className="flex gap-2">
                       <button onClick={() => openEdit(c)} className="text-navy text-xs hover:underline">Edit</button>

@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import Section from '@/components/Section'
 import { requireSupabase } from '@/lib/supabase'
 
-const STATUSES = ['Not contacted', 'Email sent', 'Replied', 'Call scheduled', 'Proposal sent', 'Won', 'Lost']
-const SOURCES = ['Google Maps', 'LinkedIn', 'Referral', 'Instagram', 'Cold outreach', 'Other']
+const STATUSES = ['Not contacted', 'Email sent', 'Messaged', 'Replied', 'Call scheduled', 'Proposal sent', 'Won', 'Lost']
+const SOURCES = ['Google Maps', 'LinkedIn', 'Facebook Post', 'Referral', 'Instagram', 'Cold outreach', 'Other']
 const SKIP_OVERDUE = ['Won', 'Lost']
 
 type Prospect = {
@@ -33,10 +33,37 @@ type FormData = Omit<Prospect, 'id'> & { id?: string }
 
 function todayStr() { return new Date().toISOString().slice(0, 10) }
 
+function urgency(dateStr: string | null, status?: string | null): 'overdue' | 'today' | 'soon' | 'none' {
+  if (!dateStr) return 'none'
+  if (status && SKIP_OVERDUE.includes(status)) return 'none'
+  const today = todayStr()
+  if (dateStr < today) return 'overdue'
+  if (dateStr === today) return 'today'
+  const days = Math.round((new Date(dateStr).getTime() - new Date(today).getTime()) / 86400000)
+  if (days <= 3) return 'soon'
+  return 'none'
+}
+
 function isOverdue(p: Prospect) {
-  if (!p.next_follow_up_date) return false
-  if (p.outreach_status && SKIP_OVERDUE.includes(p.outreach_status)) return false
-  return p.next_follow_up_date < todayStr()
+  return urgency(p.next_follow_up_date, p.outreach_status) === 'overdue'
+}
+
+function rowUrgencyClass(level: ReturnType<typeof urgency>) {
+  switch (level) {
+    case 'overdue': return 'border-t border-white/5 bg-red-500/10'
+    case 'today':   return 'border-t border-white/5 bg-orange-500/15'
+    case 'soon':    return 'border-t border-white/5 bg-amber-500/8'
+    default:        return 'border-t border-white/5'
+  }
+}
+
+function DueBadge({ dateStr, status }: { dateStr: string | null; status?: string | null }) {
+  if (!dateStr) return <span className="text-gray-500">—</span>
+  const level = urgency(dateStr, status)
+  if (level === 'overdue') return <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-red-500/20 text-red-400">⚠ {dateStr}</span>
+  if (level === 'today')   return <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-orange-500/20 text-orange-400">⚡ Today</span>
+  if (level === 'soon')    return <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-400">⏰ {dateStr}</span>
+  return <span className="text-gray-500 text-xs">{dateStr}</span>
 }
 
 function statusClass(s: string | null) {
@@ -47,6 +74,7 @@ function statusClass(s: string | null) {
     case 'Call scheduled': return 'badge bg-purple-100 text-purple-800'
     case 'Replied': return 'badge bg-amber-100 text-amber-800'
     case 'Email sent': return 'badge bg-sky-100 text-sky-800'
+    case 'Messaged': return 'badge bg-violet-100 text-violet-800'
     default: return 'badge bg-gray-100 text-gray-600'
   }
 }
@@ -181,7 +209,7 @@ export default function PipelinePage() {
               {loading && <tr><td colSpan={8} className="py-6 text-center text-gray-400 text-sm">Loading...</td></tr>}
               {!loading && filtered.length === 0 && <tr><td colSpan={8} className="py-6 text-center text-gray-400 text-sm">No prospects found.</td></tr>}
               {filtered.map(p => (
-                <tr key={p.id} className={`border-t border-gray-100 ${isOverdue(p) ? 'bg-amber-50' : ''}`}>
+                <tr key={p.id} className={rowUrgencyClass(urgency(p.next_follow_up_date, p.outreach_status))}>
                   <td className="py-2.5 pr-3 font-medium">{p.business_name}</td>
                   <td className="py-2.5 pr-3 text-gray-600">{p.owner_name ?? ''}</td>
                   <td className="py-2.5 pr-3 text-gray-500 text-xs">{p.email ?? ''}</td>
@@ -190,7 +218,7 @@ export default function PipelinePage() {
                     <span className={statusClass(p.outreach_status)}>{p.outreach_status ?? '—'}</span>
                   </td>
                   <td className="py-2.5 pr-3">{p.last_follow_up_date ?? ''}</td>
-                  <td className="py-2.5 pr-3">{p.next_follow_up_date ?? ''}</td>
+                  <td className="py-2.5 pr-3"><DueBadge dateStr={p.next_follow_up_date} status={p.outreach_status} /></td>
                   <td className="py-2.5">
                     <div className="flex gap-2">
                       <button onClick={() => openEdit(p)} className="text-navy text-xs hover:underline">Edit</button>
