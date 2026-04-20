@@ -5,7 +5,6 @@ import Link from 'next/link'
 import Section from '@/components/Section'
 import Sensitive from '@/components/Sensitive'
 import { requireSupabase } from '@/lib/supabase'
-import { statusBadgeClass } from '@/lib/utils'
 
 /* ─── Types ──────────────────────────────────────────────── */
 type Goals = {
@@ -28,6 +27,7 @@ type ClientRow = {
 type Money = { invoiced: number; received: number; outstanding: number; expenses: number }
 type Hours = { nine_to_five: number; growmated: number }
 type PipelineCounts = { email_sent: number; call_scheduled: number; proposal_sent: number; overdue: number }
+type ActionItem = { id: string; who: string; action: string; due: string; urgency: 'today' | 'soon' | 'upcoming'; type: 'client' | 'pipeline' }
 
 /* ─── Helpers ────────────────────────────────────────────── */
 function isoToday() { return new Date().toISOString().slice(0, 10) }
@@ -107,6 +107,7 @@ export default function DashboardPage() {
   const [money, setMoney] = useState<Money>({ invoiced: 0, received: 0, outstanding: 0, expenses: 0 })
   const [hours, setHours] = useState<Hours>({ nine_to_five: 0, growmated: 0 })
   const [pipeline, setPipeline] = useState<PipelineCounts>({ email_sent: 0, call_scheduled: 0, proposal_sent: 0, overdue: 0 })
+  const [pipelineItems, setPipelineItems] = useState<Array<{ id: string; business_name: string; owner_name: string | null; next_follow_up_date: string | null; outreach_status: string | null }>>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
 
@@ -136,7 +137,7 @@ export default function DashboardPage() {
           sb.from('income').select('amount,status').gte('date', sm).lte('date', em),
           sb.from('expenses').select('amount').gte('date', sm).lte('date', em),
           sb.from('time_logs').select('hours_9to5,hours_growmated').gte('date', sw).lte('date', ew),
-          sb.from('pipeline').select('outreach_status,next_follow_up_date'),
+          sb.from('pipeline').select('id,business_name,owner_name,outreach_status,next_follow_up_date').not('outreach_status', 'in', '("Won","Lost")'),
         ])
 
         if (goalsRes.data) setGoals(goalsRes.data as Goals)
@@ -157,9 +158,9 @@ export default function DashboardPage() {
         })
 
         const pipe = pipeRes.data ?? []
+        setPipelineItems(pipe as any)
         const overdue = pipe.filter((r:any) =>
-          r.next_follow_up_date && r.next_follow_up_date < today &&
-          !['Won','Lost'].includes(r.outreach_status)
+          r.next_follow_up_date && r.next_follow_up_date < today
         ).length
         setPipeline({
           email_sent:     pipe.filter((r:any) => r.outreach_status === 'Email sent').length,
@@ -175,7 +176,7 @@ export default function DashboardPage() {
     })()
   }, [])
 
-  const today = useMemo(() =>
+  const todayLabel = useMemo(() =>
     new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }), [])
 
   const netProfit = money.received - money.expenses
@@ -184,17 +185,55 @@ export default function DashboardPage() {
   const revPct = pct(money.received, revTarget)
   const hrsPct  = pct(hours.growmated, hrsTarget)
 
-  // Active clients = not Complete
-  const activeClients = clients.filter(c => c.phase !== 'Complete')
-  const overdueClients = activeClients.filter(c =>
-    c.next_action_due_date && c.next_action_due_date < isoToday()
-  )
-
-  const urgentCount = overdueClients.length + pipeline.overdue + (pipeline.proposal_sent > 0 ? 1 : 0)
-
   // Karen's proposal (check for it specifically)
   const karenClient = clients.find(c => c.client_name.toLowerCase().includes('karen'))
   const karenDaysUntilDue = karenClient?.next_action_due_date ? daysUntil(karenClient.next_action_due_date) : null
+
+  // Build ACTION BOARD — client actions
+  const today = isoToday()
+  const actionItems: ActionItem[] = useMemo(() => {
+    const items: ActionItem[] = []
+    // Client actions
+    clients.forEach(c => {
+      if (!c.next_action_due_date || !c.next_action) return
+      const d = c.next_action_due_date
+      const days = daysUntil(d)
+      let urgency: ActionItem['urgency']
+      if (d <= today) urgency = 'today'
+      else if (days <= 3) urgency = 'soon'
+      else if (days <= 7) urgency = 'upcoming'
+      else return
+      items.push({ id: c.id, who: c.client_name, action: c.next_action, due: d, urgency, type: 'client' })
+    })
+    // Pipeline follow-ups
+    pipelineItems.forEach(p => {
+      if (!p.next_follow_up_date) return
+      const d = p.next_follow_up_date
+      const days = daysUntil(d)
+      let urgency: ActionItem['urgency']
+      if (d <= today) urgency = 'today'
+      else if (days <= 3) urgency = 'soon'
+      else if (days <= 7) urgency = 'upcoming'
+      else return
+      items.push({
+        id: p.id,
+        who: p.business_name + (p.owner_name ? ` (${p.owner_name})` : ''),
+        action: `Follow up · ${p.outreach_status}`,
+        due: d,
+        urgency,
+        type: 'pipeline',
+      })
+    })
+    // Sort: today first, then by date
+    return items.sort((a, b) => {
+      const order = { today: 0, soon: 1, upcoming: 2 }
+      if (order[a.urgency] !== order[b.urgency]) return order[a.urgency] - order[b.urgency]
+      return a.due.localeCompare(b.due)
+    })
+  }, [clients, pipelineItems, today])
+
+  const todayCount = actionItems.filter(i => i.urgency === 'today').length
+  const urgentCount = todayCount
 
   return (
     <div className="space-y-5 pb-8">
@@ -209,7 +248,7 @@ export default function DashboardPage() {
             Hey Muj.
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
-            {today}
+            {todayLabel}
             {urgentCount > 0 && (
               <span className="ml-3 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
                 style={{ background: 'rgba(248,113,113,0.15)', color: '#f87171' }}>
@@ -317,7 +356,7 @@ export default function DashboardPage() {
             </div>
             <div className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Email sent · awaiting reply</div>
             {pipeline.email_sent > 0 && (
-              <div className="text-xs mt-2 font-medium" style={{ color: '#f87171' }}>Due April 22 → act now</div>
+              <div className="text-xs mt-2 font-medium" style={{ color: '#f87171' }}>Check Action Board →</div>
             )}
           </div>
         </Link>
@@ -353,60 +392,85 @@ export default function DashboardPage() {
       {/* ── Main Grid ──────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-        {/* Left: Active Clients */}
+        {/* Left: Action Board */}
         <div className="lg:col-span-2">
-          <Section title="ACTIVE CLIENTS">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs uppercase tracking-wide" style={{ color: 'var(--muted)' }}>
-                    <th className="pb-3 pr-4">Client</th>
-                    <th className="pb-3 pr-4">Phase</th>
-                    <th className="pb-3 pr-4">Status</th>
-                    <th className="pb-3 pr-4">Next Action</th>
-                    <th className="pb-3">Due</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading && (
-                    <tr><td colSpan={5} className="py-6 text-center text-xs" style={{ color: 'var(--muted)' }}>Loading...</td></tr>
-                  )}
-                  {!loading && clients.length === 0 && (
-                    <tr><td colSpan={5} className="py-6 text-center text-xs" style={{ color: 'var(--muted)' }}>
-                      No clients yet. <Link href="/clients" className="underline" style={{ color: '#5254CC' }}>Add one</Link>
-                    </td></tr>
-                  )}
-                  {clients.map(c => {
-                    const overdue = c.next_action_due_date && c.next_action_due_date < isoToday()
-                    const days = c.next_action_due_date ? daysUntil(c.next_action_due_date) : null
-                    return (
-                      <tr key={c.id} className="border-t border-gray-100">
-                        <td className="py-3 pr-4 font-semibold">{c.client_name}</td>
-                        <td className="py-3 pr-4 text-xs" style={{ color: 'var(--muted)' }}>{c.phase ?? '—'}</td>
-                        <td className="py-3 pr-4">
-                          <span className={statusBadgeClass(c.status ?? undefined)}>{c.status ?? '—'}</span>
-                        </td>
-                        <td className="py-3 pr-4 max-w-[220px] truncate" style={{ color: '#94A3B8' }} title={c.next_action ?? ''}>
-                          {c.next_action ?? '—'}
-                        </td>
-                        <td className="py-3 whitespace-nowrap">
-                          {days !== null ? (
-                            <span
-                              className="text-xs font-medium"
-                              style={{ color: overdue ? '#f87171' : days <= 2 ? '#fbbf24' : 'var(--muted)' }}
-                            >
-                              {overdue ? `${Math.abs(days)}d overdue` : days === 0 ? 'Today' : `${days}d`}
-                            </span>
-                          ) : (
-                            <span style={{ color: 'var(--muted)' }}>—</span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+          <Section title="ACTION BOARD — What needs doing">
+            {loading && (
+              <div className="py-6 text-center text-xs" style={{ color: 'var(--muted)' }}>Loading...</div>
+            )}
+            {!loading && actionItems.length === 0 && (
+              <div className="py-8 text-center">
+                <div className="text-2xl mb-2">🎉</div>
+                <div className="text-sm font-medium" style={{ color: '#4ade80' }}>All clear — nothing due in the next 7 days</div>
+              </div>
+            )}
+            {!loading && actionItems.length > 0 && (
+              <div className="space-y-2">
+                {/* Today */}
+                {actionItems.filter(i => i.urgency === 'today').length > 0 && (
+                  <div>
+                    <div className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: '#f87171' }}>
+                      ⚡ Today
+                    </div>
+                    {actionItems.filter(i => i.urgency === 'today').map(item => (
+                      <Link key={item.id} href={item.type === 'client' ? '/clients' : '/pipeline'}>
+                        <div className="flex items-start gap-3 rounded-xl px-4 py-3 mb-1.5 cursor-pointer hover:opacity-90 transition-opacity"
+                          style={{ background: 'rgba(248,113,113,0.1)', borderLeft: '3px solid #f87171' }}>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm truncate" style={{ color: 'var(--text)' }}>{item.who}</div>
+                            <div className="text-xs mt-0.5 truncate" style={{ color: '#f87171' }}>{item.action}</div>
+                          </div>
+                          <span className="text-xs font-bold flex-shrink-0 mt-0.5" style={{ color: '#f87171' }}>TODAY →</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {/* Soon (1-3 days) */}
+                {actionItems.filter(i => i.urgency === 'soon').length > 0 && (
+                  <div className="pt-1">
+                    <div className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: '#fbbf24' }}>
+                      ⏰ Coming Up (1–3 days)
+                    </div>
+                    {actionItems.filter(i => i.urgency === 'soon').map(item => (
+                      <Link key={item.id} href={item.type === 'client' ? '/clients' : '/pipeline'}>
+                        <div className="flex items-start gap-3 rounded-xl px-4 py-3 mb-1.5 cursor-pointer hover:opacity-90 transition-opacity"
+                          style={{ background: 'rgba(251,191,36,0.08)', borderLeft: '3px solid #fbbf24' }}>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm truncate" style={{ color: 'var(--text)' }}>{item.who}</div>
+                            <div className="text-xs mt-0.5 truncate" style={{ color: '#fbbf24' }}>{item.action}</div>
+                          </div>
+                          <span className="text-xs flex-shrink-0 mt-0.5" style={{ color: '#fbbf24' }}>{item.due}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {/* Upcoming (4-7 days) */}
+                {actionItems.filter(i => i.urgency === 'upcoming').length > 0 && (
+                  <div className="pt-1">
+                    <div className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: 'var(--muted)' }}>
+                      📅 This Week (4–7 days)
+                    </div>
+                    {actionItems.filter(i => i.urgency === 'upcoming').map(item => (
+                      <Link key={item.id} href={item.type === 'client' ? '/clients' : '/pipeline'}>
+                        <div className="flex items-start gap-3 rounded-xl px-4 py-3 mb-1.5 cursor-pointer hover:opacity-90 transition-opacity"
+                          style={{ background: 'var(--surface2)', borderLeft: '3px solid var(--border)' }}>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-sm truncate" style={{ color: 'var(--text)' }}>{item.who}</div>
+                            <div className="text-xs mt-0.5 truncate" style={{ color: 'var(--muted)' }}>{item.action}</div>
+                          </div>
+                          <span className="text-xs flex-shrink-0 mt-0.5" style={{ color: 'var(--muted)' }}>{item.due}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                <Link href="/clients" className="block mt-3 text-xs text-center hover:underline" style={{ color: '#5254CC' }}>
+                  View all clients & pipeline →
+                </Link>
+              </div>
+            )}
           </Section>
         </div>
 
