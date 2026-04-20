@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { requireSupabase } from '@/lib/supabase'
 
-const CATEGORIES = ['All', 'LinkedIn', 'Facebook DM', 'Email', 'Follow-up', 'General']
+const CATEGORIES = ['All', 'LinkedIn', 'Facebook DM', 'Facebook Post', 'Email', 'Follow-up', 'General']
 
 type Template = {
   id: string
@@ -22,11 +22,12 @@ const BLANK: Omit<Template, 'id' | 'created_at'> = {
 type FormData = Omit<Template, 'id' | 'created_at'> & { id?: string }
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  'LinkedIn':    { bg: 'rgba(99,102,241,0.15)',  text: '#818cf8' },
-  'Facebook DM': { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa' },
-  'Email':       { bg: 'rgba(16,185,129,0.15)',  text: '#34d399' },
-  'Follow-up':   { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24' },
-  'General':     { bg: 'rgba(148,163,184,0.15)', text: '#94a3b8' },
+  'LinkedIn':      { bg: 'rgba(99,102,241,0.15)',  text: '#818cf8' },
+  'Facebook DM':   { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa' },
+  'Facebook Post': { bg: 'rgba(249,115,22,0.15)',  text: '#fb923c' },
+  'Email':         { bg: 'rgba(16,185,129,0.15)',  text: '#34d399' },
+  'Follow-up':     { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24' },
+  'General':       { bg: 'rgba(148,163,184,0.15)', text: '#94a3b8' },
 }
 
 function CategoryBadge({ cat }: { cat: string }) {

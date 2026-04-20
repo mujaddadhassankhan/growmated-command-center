@@ -8,8 +8,9 @@ import { cn } from '@/lib/utils'
 const links = [
   { href: '/',                label: 'Dashboard'      },
   { href: '/conversations',   label: '💬 Convos'      },
-  { href: '/templates',       label: '📋 Templates'   },
-  { href: '/clients',         label: 'Clients'        },
+  { href: '/templates',        label: '📋 Templates'       },
+  { href: '/content-calendar', label: '📅 Content Cal'    },
+  { href: '/clients',          label: 'Clients'            },
   { href: '/pipeline',        label: 'Pipeline'       },
   { href: '/finances',        label: 'Finances'       },
   { href: '/time',            label: 'Time Log'       },

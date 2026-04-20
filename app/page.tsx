@@ -137,7 +137,7 @@ export default function DashboardPage() {
           sb.from('income').select('amount,status').gte('date', sm).lte('date', em),
           sb.from('expenses').select('amount').gte('date', sm).lte('date', em),
           sb.from('time_logs').select('hours_9to5,hours_growmated').gte('date', sw).lte('date', ew),
-          sb.from('pipeline').select('id,business_name,owner_name,outreach_status,next_follow_up_date').not('outreach_status', 'in', '("Won","Lost")'),
+          sb.from('pipeline').select('id,business_name,owner_name,outreach_status,next_follow_up_date').neq('outreach_status', 'Won').neq('outreach_status', 'Lost'),
         ])
 
         if (goalsRes.data) setGoals(goalsRes.data as Goals)
